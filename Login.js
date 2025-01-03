@@ -31,7 +31,7 @@ function Login() {
             const response = await axios.post('http://localhost:5000/api/login', { email, password });
             localStorage.setItem('token', response.data.token);
             alert('Login Successful!');
-            navigate('/profile'); // Navigate to the profile page after login
+            navigate('/home'); // Navigate to the home page after login
         } catch (error) {
             if (error.response && error.response.status === 400) {
                 setError('Invalid email or password');

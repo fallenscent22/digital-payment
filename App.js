@@ -7,6 +7,8 @@ import Profile from './Profile';
 import TransactionPage from './TransactionPage';
 import Home from './Home';
 import HelpCentre from './HelpCentre';
+import RecurringPayment from './RecurringPayment';
+import SmartSavings from './SmartSavings';
 
 function NavigationBar() {
     const location = useLocation();
@@ -22,6 +24,8 @@ function NavigationBar() {
                 </Typography>
                 <Button color="inherit" component={Link} to="/home">Home</Button>
                 <Button color="inherit" component={Link} to="/transactions">Transaction</Button>
+                <Button color="inherit" component={Link} to="/recurring-payment">Recurring Payment</Button>
+                <Button color="inherit" component={Link} to="/smart-savings">Smart Savings</Button>
                 <Button color="inherit" component={Link} to="/signup">Signup</Button>
                 <Button color="inherit" component={Link} to="/helpcentre">Help Centre</Button>
             </Toolbar>
@@ -41,6 +45,8 @@ function App() {
                     <Route path="/transactions" element={<TransactionPage />} />
                     <Route path="/home" element={<Home />} />
                     <Route path="/helpcentre" element={<HelpCentre />} />
+                    <Route path="/recurring-payment" element={<RecurringPayment />} />
+                    <Route path="/smart-savings" element={<SmartSavings />} />
                     <Route path="/" element={<Navigate to="/login" />} />
                 </Routes>
             </Container>
