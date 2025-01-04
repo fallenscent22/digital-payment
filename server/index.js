@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema({
     balance: { type: Number, default: 100000 }, // Set initial balance to 100,000
     userId: { type: String, unique: true, default: uuidv4 },
     upiId: { type: String, unique: true, default: () => `upi-${uuidv4()}` },
+    savingsGoals: [{ goalName: String, targetAmount: Number, currentAmount: { type: Number, default: 0 } }],
 });
 
 const transactionSchema = new mongoose.Schema({
@@ -41,8 +42,17 @@ const transactionSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now },
 });
 
+const recurringPaymentSchema = new mongoose.Schema({
+    userId: String,
+    receiverId: String,
+    amount: Number,
+    frequency: String, // e.g., 'daily', 'weekly', 'monthly'
+    nextPaymentDate: Date,
+});
+
 const User = mongoose.model('User', userSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
+const RecurringPayment = mongoose.model('RecurringPayment', recurringPaymentSchema);
 
 // Routes
 app.post('/api/register', async (req, res) => {
@@ -67,10 +77,12 @@ app.post('/api/login', async (req, res) => {
     try {
         const user = await User.findOne({ email });
         if (!user) {
+            console.error('Login failed: Invalid email');
             return res.status(400).send('Invalid email or password');
         }
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
+            console.error('Login failed: Invalid password');
             return res.status(400).send('Invalid email or password');
         }
         const token = jwt.sign({ userId: user._id }, JWT_SECRET);
@@ -89,7 +101,8 @@ app.get('/api/user', async (req, res) => {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         const user = await User.findById(decoded.userId);
-        res.send(user);
+        const recurringPayments = await RecurringPayment.find({ userId: decoded.userId });
+        res.send({ user, recurringPayments });
     } catch (error) {
         console.error('Error fetching user:', error);
         res.status(401).send('Invalid token');
@@ -142,6 +155,54 @@ app.get('/api/transactions', async (req, res) => {
     } catch (error) {
         console.error('Error fetching transactions:', error);
         res.status(401).send('Invalid token');
+    }
+});
+
+app.post('/api/recurring-payment', async (req, res) => {
+    const { receiverId, amount, frequency, token } = req.body;
+    if (!token) {
+        return res.status(401).send('Token is required');
+    }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const userId = decoded.userId;
+        const nextPaymentDate = new Date();
+        switch (frequency) {
+            case 'daily':
+                nextPaymentDate.setDate(nextPaymentDate.getDate() + 1);
+                break;
+            case 'weekly':
+                nextPaymentDate.setDate(nextPaymentDate.getDate() + 7);
+                break;
+            case 'monthly':
+                nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+                break;
+            default:
+                return res.status(400).send('Invalid frequency');
+        }
+        const recurringPayment = new RecurringPayment({ userId, receiverId, amount, frequency, nextPaymentDate });
+        await recurringPayment.save();
+        res.send('Recurring payment scheduled');
+    } catch (error) {
+        console.error('Error scheduling recurring payment:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+app.post('/api/savings-goal', async (req, res) => {
+    const { goalName, targetAmount, token } = req.body;
+    if (!token) {
+        return res.status(401).send('Token is required');
+    }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user = await User.findById(decoded.userId);
+        user.savingsGoals.push({ goalName, targetAmount });
+        await user.save();
+        res.send('Savings goal added');
+    } catch (error) {
+        console.error('Error adding savings goal:', error);
+        res.status(500).send('Server error');
     }
 });
 
