@@ -7,10 +7,10 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = 'your_jwt_secret_key';
+const JWT_SECRET = '3939c2c2f02056844c86bfff981092e964f5920bcf3b4112ee3ef80c441f4014bd4ca812ce411d296538effa895189773dc4a76ae417a4c52a62bf70f6ab1ae7';
 
 // Middleware
-app.use(cors());
+app.use(cors()); 
 app.use(express.json());
 
 // MongoDB connection
@@ -24,27 +24,37 @@ mongoose.connect('mongodb://localhost:27017/digital_payment', {
 .catch((err) => {
     console.error(err);
 });
-
+   //user schema
 const userSchema = new mongoose.Schema({
     email: { type: String, unique: true },
     password: String,
     phoneNumber: String,
     balance: { type: Number, default: 100000 }, // Set initial balance to 100,000
-    userId: { type: String, unique: true, default: uuidv4 },
-    upiId: { type: String, unique: true, default: () => `upi-${uuidv4()}` },
+    userId: { type: String, unique: true, default: uuidv4 },    // Generate a unique user ID
+    upiId: { type: String, unique: true, default: () => `upi-${uuidv4()}` }, // Generate a unique UPI ID
+    savingsGoals: [{ goalName: String, targetAmount: Number, currentAmount: { type: Number, default: 0 } }],
 });
-
+      //transaction schema
 const transactionSchema = new mongoose.Schema({
     senderId: String,
     receiverId: String,
     amount: Number,
     date: { type: Date, default: Date.now },
 });
-
+      //recurring payment schema
+const recurringPaymentSchema = new mongoose.Schema({
+    userId: String,
+    receiverId: String,
+    amount: Number,
+    frequency: String, // e.g., 'daily', 'weekly', 'monthly'
+    nextPaymentDate: Date,
+});
+          //user model,transaction model,recurring payment model
 const User = mongoose.model('User', userSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
+const RecurringPayment = mongoose.model('RecurringPayment', recurringPaymentSchema);
 
-// Routes
+// signup route
 app.post('/api/register', async (req, res) => {
     const { email, password, phoneNumber } = req.body;
     try {
@@ -61,16 +71,18 @@ app.post('/api/register', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
-
+ //login route
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ email });
         if (!user) {
+            console.error('Login failed: Invalid email');
             return res.status(400).send('Invalid email or password');
         }
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
+            console.error('Login failed: Invalid password');
             return res.status(400).send('Invalid email or password');
         }
         const token = jwt.sign({ userId: user._id }, JWT_SECRET);
@@ -80,7 +92,7 @@ app.post('/api/login', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
-
+//user route
 app.get('/api/user', async (req, res) => {
     const token = req.query.token;
     if (!token) {
@@ -89,13 +101,14 @@ app.get('/api/user', async (req, res) => {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         const user = await User.findById(decoded.userId);
-        res.send(user);
+        const recurringPayments = await RecurringPayment.find({ userId: decoded.userId });
+        res.send({ user, recurringPayments });
     } catch (error) {
         console.error('Error fetching user:', error);
         res.status(401).send('Invalid token');
     }
 });
-
+//transaction route
 app.post('/api/send-money', async (req, res) => {
     const { receiverUpiId, amount, token } = req.body;
     if (!token) {
@@ -129,7 +142,7 @@ app.post('/api/send-money', async (req, res) => {
         res.status(401).send('Invalid token');
     }
 });
-
+//transaction route
 app.get('/api/transactions', async (req, res) => {
     const token = req.query.token;
     if (!token) {
@@ -142,6 +155,54 @@ app.get('/api/transactions', async (req, res) => {
     } catch (error) {
         console.error('Error fetching transactions:', error);
         res.status(401).send('Invalid token');
+    }
+});
+//recurring payment route
+app.post('/api/recurring-payment', async (req, res) => {
+    const { receiverId, amount, frequency, token } = req.body;
+    if (!token) {
+        return res.status(401).send('Token is required');
+    }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const userId = decoded.userId;
+        const nextPaymentDate = new Date();
+        switch (frequency) {
+            case 'daily':
+                nextPaymentDate.setDate(nextPaymentDate.getDate() + 1);
+                break;
+            case 'weekly':
+                nextPaymentDate.setDate(nextPaymentDate.getDate() + 7);
+                break;
+            case 'monthly':
+                nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+                break;
+            default:
+                return res.status(400).send('Invalid frequency');
+        }
+        const recurringPayment = new RecurringPayment({ userId, receiverId, amount, frequency, nextPaymentDate });
+        await recurringPayment.save();
+        res.send('Recurring payment scheduled');
+    } catch (error) {
+        console.error('Error scheduling recurring payment:', error);
+        res.status(500).send('Server error');
+    }
+});
+//savings goal route
+app.post('/api/savings-goal', async (req, res) => {
+    const { goalName, targetAmount, token } = req.body;
+    if (!token) {
+        return res.status(401).send('Token is required');
+    }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user = await User.findById(decoded.userId);
+        user.savingsGoals.push({ goalName, targetAmount });
+        await user.save();
+        res.send('Savings goal added');
+    } catch (error) {
+        console.error('Error adding savings goal:', error);
+        res.status(500).send('Server error');
     }
 });
 
