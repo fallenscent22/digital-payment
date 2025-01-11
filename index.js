@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB connection
-mongoose.connect('mongodb+srv://nikhithachatla6:nikhitha@digitalwallet.hbil4.mongodb.net/test', {
+mongoose.connect('mongodb url', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })
