@@ -7,14 +7,14 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = '3939c2c2f02056844c86bfff981092e964f5920bcf3b4112ee3ef80c441f4014bd4ca812ce411d296538effa895189773dc4a76ae417a4c52a62bf70f6ab1ae7';
+const JWT_SECRET = 'your_jwt_secret_key';
 
 // Middleware
-app.use(cors()); 
+app.use(cors());
 app.use(express.json());
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/digital_payment', {
+mongoose.connect('mongodb+srv://nikhithachatla6:nikhitha@digitalwallet.hbil4.mongodb.net/test', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })
@@ -24,24 +24,24 @@ mongoose.connect('mongodb://localhost:27017/digital_payment', {
 .catch((err) => {
     console.error(err);
 });
-   //user schema
+
 const userSchema = new mongoose.Schema({
     email: { type: String, unique: true },
     password: String,
     phoneNumber: String,
     balance: { type: Number, default: 100000 }, // Set initial balance to 100,000
-    userId: { type: String, unique: true, default: uuidv4 },    // Generate a unique user ID
-    upiId: { type: String, unique: true, default: () => `upi-${uuidv4()}` }, // Generate a unique UPI ID
+    userId: { type: String, unique: true, default: uuidv4 },
+    upiId: { type: String, unique: true, default: () => `upi-${uuidv4()}` },
     savingsGoals: [{ goalName: String, targetAmount: Number, currentAmount: { type: Number, default: 0 } }],
 });
-      //transaction schema
+
 const transactionSchema = new mongoose.Schema({
     senderId: String,
     receiverId: String,
     amount: Number,
     date: { type: Date, default: Date.now },
 });
-      //recurring payment schema
+
 const recurringPaymentSchema = new mongoose.Schema({
     userId: String,
     receiverId: String,
@@ -49,12 +49,12 @@ const recurringPaymentSchema = new mongoose.Schema({
     frequency: String, // e.g., 'daily', 'weekly', 'monthly'
     nextPaymentDate: Date,
 });
-          //user model,transaction model,recurring payment model
+
 const User = mongoose.model('User', userSchema);
 const Transaction = mongoose.model('Transaction', transactionSchema);
 const RecurringPayment = mongoose.model('RecurringPayment', recurringPaymentSchema);
 
-// signup route
+// Routes
 app.post('/api/register', async (req, res) => {
     const { email, password, phoneNumber } = req.body;
     try {
@@ -71,7 +71,7 @@ app.post('/api/register', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
- //login route
+
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -92,7 +92,7 @@ app.post('/api/login', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
-//user route
+
 app.get('/api/user', async (req, res) => {
     const token = req.query.token;
     if (!token) {
@@ -108,7 +108,7 @@ app.get('/api/user', async (req, res) => {
         res.status(401).send('Invalid token');
     }
 });
-//transaction route
+
 app.post('/api/send-money', async (req, res) => {
     const { receiverUpiId, amount, token } = req.body;
     if (!token) {
@@ -142,7 +142,7 @@ app.post('/api/send-money', async (req, res) => {
         res.status(401).send('Invalid token');
     }
 });
-//transaction route
+
 app.get('/api/transactions', async (req, res) => {
     const token = req.query.token;
     if (!token) {
@@ -157,7 +157,7 @@ app.get('/api/transactions', async (req, res) => {
         res.status(401).send('Invalid token');
     }
 });
-//recurring payment route
+
 app.post('/api/recurring-payment', async (req, res) => {
     const { receiverId, amount, frequency, token } = req.body;
     if (!token) {
@@ -188,7 +188,7 @@ app.post('/api/recurring-payment', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
-//savings goal route
+
 app.post('/api/savings-goal', async (req, res) => {
     const { goalName, targetAmount, token } = req.body;
     if (!token) {
@@ -205,6 +205,15 @@ app.post('/api/savings-goal', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+//changes made in next 5 lines of the code below
+/*
+const userDetails = await UserModel.findById(userId); // Replace with your actual database query
+console.log(userDetails); // Ensure data is correct before sending the response
+res.status(200).json(userDetails);
+console.log("Middleware passed!");
+console.log("Request received:", req.body); // Backend
+console.log("API response:", response.data); // Frontend
+*/
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
