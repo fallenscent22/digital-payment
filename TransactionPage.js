@@ -26,7 +26,7 @@ function TransactionPage() {
                 const response = await axios.get('http://localhost:5000/api/user', {
                     params: { token }
                 });
-                setUser(response.data);
+                setUser(response.data.user);
             } catch (error) {
                 console.error('Error fetching user data:', error);
             }
@@ -38,8 +38,11 @@ function TransactionPage() {
         const token = localStorage.getItem('token');
         try {
             await axios.post('http://localhost:5000/api/send-money', { receiverUpiId, amount, token });
+            // setMessage('Transaction successful');
+            // navigate('/home'); // Navigate to home page to refresh transaction histor
             setMessage('Transaction successful');
-            navigate('/home'); // Navigate to home page to refresh transaction history
+            setTimeout(() => navigate('/home'), 2000); // Wait 2 seconds before navigating
+            
         } catch (error) {
             setMessage('Transaction failed');
             console.error('Error sending money:', error);

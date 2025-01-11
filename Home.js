@@ -37,7 +37,7 @@ function Home() {
                 const response = await axios.get('http://localhost:5000/api/user', {
                     params: { token }
                 });
-                setUser(response.data);
+                setUser(response.data.user);
             } catch (error) {
                 console.error('Error fetching user data:', error);
             }
@@ -58,6 +58,11 @@ function Home() {
         fetchUserData();
         fetchTransactions();
     }, []);
+
+    // Getters for user properties
+    const getUserEmail = () => user?.email || 'No email available';
+    const getUserUpiId = () => user?.upiId || 'No UPI ID available';
+    const getUserBalance = () => user?.balance ?? 'Balance unavailable';
 
     return (
         <Container maxWidth="lg">

@@ -11,11 +11,6 @@ import RecurringPayment from './RecurringPayment';
 import SmartSavings from './SmartSavings';
 
 function NavigationBar() {
-    const location = useLocation();
-    const hideNavBar = location.pathname === '/login' || location.pathname === '/signup';
-
-    if (hideNavBar) return null;
-
     return (
         <AppBar position="static">
             <Toolbar>
@@ -33,22 +28,37 @@ function NavigationBar() {
     );
 }
 
+function AppLayout({ children }) {
+    const location = useLocation();
+
+    // Hide Navbar for Login and Signup pages
+    const hideNavbar = location.pathname === '/login' || location.pathname === '/signup';
+
+    return (
+        <>
+            {!hideNavbar && <NavigationBar />}
+            {children}
+        </>
+    );
+}
+
 function App() {
     return (
         <Router>
             <Container maxWidth="lg">
-                <NavigationBar />
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/transactions" element={<TransactionPage />} />
-                    <Route path="/home" element={<Home />} />
-                    <Route path="/helpcentre" element={<HelpCentre />} />
-                    <Route path="/recurring-payment" element={<RecurringPayment />} />
-                    <Route path="/smart-savings" element={<SmartSavings />} />
-                    <Route path="/" element={<Navigate to="/login" />} />
-                </Routes>
+                <AppLayout>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/signup" element={<Signup />} />
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/transactions" element={<TransactionPage />} />
+                        <Route path="/home" element={<Home />} />
+                        <Route path="/helpcentre" element={<HelpCentre />} />
+                        <Route path="/recurring-payment" element={<RecurringPayment />} />
+                        <Route path="/smart-savings" element={<SmartSavings />} />
+                        <Route path="/" element={<Navigate to="/login" />} />
+                    </Routes>
+                </AppLayout>
             </Container>
         </Router>
     );
