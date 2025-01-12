@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Typography, Paper, Box, TextField, Button } from '@mui/material';
+import { Container, Typography, Paper, Box, TextField, Button, CircularProgress } from '@mui/material';
 import { styled } from '@mui/system';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,37 +15,99 @@ const PageContainer = styled(Paper)({
 function TransactionPage() {
     const [user, setUser] = useState(null);
     const [receiverUpiId, setReceiverUpiId] = useState('');
+    const [receiverName, setReceiverName] = useState('');
     const [amount, setAmount] = useState('');
     const [message, setMessage] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [upiLoading, setUpiLoading] = useState(false);
+    const [debouncedUpiId, setDebouncedUpiId] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchUserData = async () => {
             const token = localStorage.getItem('token');
+            if (!token) {
+                navigate('/login');
+                return;
+            }
             try {
                 const response = await axios.get('http://localhost:5000/api/user', {
-                    params: { token }
+                    params: { token },
                 });
                 setUser(response.data.user);
             } catch (error) {
+                if (error.response && error.response.status === 401) {
+                    navigate('/login');
+                }
                 console.error('Error fetching user data:', error);
             }
         };
         fetchUserData();
-    }, []);
+    }, [navigate]);
+
+    useEffect(() => {
+        if (!debouncedUpiId) return;
+
+        const fetchReceiverData = async () => {
+            setReceiverName('');
+            setUpiLoading(true);
+            try {
+                const response = await axios.get('http://localhost:5000/api/get-receiver', {
+                    params: { upiId: debouncedUpiId },
+                });
+                setReceiverName(response.data.name || 'Receiver not found');
+            } catch (error) {
+                console.error('Error fetching receiver data:', error);
+                setReceiverName('Error fetching receiver details');
+            } finally {
+                setUpiLoading(false);
+            }
+        };
+
+        fetchReceiverData();
+    }, [debouncedUpiId]);
+
+    const handleReceiverUpiIdChange = (e) => {
+        const upiId = e.target.value;
+        setReceiverUpiId(upiId);
+        setMessage('');
+        if (upiId) {
+            // Debouncing the input to reduce API calls
+            clearTimeout(window.debounceTimeout);
+            window.debounceTimeout = setTimeout(() => {
+                setDebouncedUpiId(upiId);
+            }, 500); // Adjust the debounce delay as needed
+        } else {
+            setReceiverName('');
+        }
+    };
 
     const handleSendMoney = async () => {
+        const parsedAmount = parseFloat(amount);
+        if (!receiverUpiId || isNaN(parsedAmount) || parsedAmount <= 0) {
+            setMessage('Please enter a valid UPI ID and a positive amount.');
+            return;
+        }
+        if (!receiverName || receiverName === 'Receiver not found') {
+            setMessage('Please confirm the receiver\'s details before proceeding.');
+            return;
+        }
+
         const token = localStorage.getItem('token');
+        setLoading(true);
         try {
-            await axios.post('http://localhost:5000/api/send-money', { receiverUpiId, amount, token });
-            // setMessage('Transaction successful');
-            // navigate('/home'); // Navigate to home page to refresh transaction histor
-            setMessage('Transaction successful');
-            setTimeout(() => navigate('/home'), 2000); // Wait 2 seconds before navigating
-            
+            await axios.post('http://localhost:5000/api/send-money', {
+                receiverUpiId,
+                amount: parsedAmount,
+                token,
+            });
+            setMessage('Transaction successful!');
+            setTimeout(() => navigate('/home'), 2000);
         } catch (error) {
-            setMessage('Transaction failed');
+            setMessage('Transaction failed. Please try again.');
             console.error('Error sending money:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -57,7 +119,8 @@ function TransactionPage() {
                 </Typography>
                 {user && (
                     <Box>
-                        <Typography variant="h6">Welcome, {user.email}</Typography>
+                        <Typography variant="h6">Name: {user.name}</Typography>
+                        <Typography variant="h6">Email: {user.email}</Typography>
                         <Typography variant="body1">User ID: {user.userId}</Typography>
                         <Typography variant="body1">UPI ID: {user.upiId}</Typography>
                         <Typography variant="body1">Balance: ${user.balance}</Typography>
@@ -70,9 +133,18 @@ function TransactionPage() {
                         fullWidth
                         margin="normal"
                         value={receiverUpiId}
-                        onChange={(e) => setReceiverUpiId(e.target.value)}
+                        onChange={handleReceiverUpiIdChange}
                         required
                     />
+                    {upiLoading ? (
+                        <CircularProgress size={24} style={{ marginTop: 10 }} />
+                    ) : (
+                        receiverName && (
+                            <Typography variant="body2" color="textSecondary" mt={1}>
+                                Receiver Name: {receiverName}
+                            </Typography>
+                        )
+                    )}
                     <TextField
                         label="Amount"
                         variant="outlined"
@@ -83,12 +155,18 @@ function TransactionPage() {
                         required
                     />
                     <Box mt={2}>
-                        <Button variant="contained" color="primary" onClick={handleSendMoney} fullWidth>
-                            Send Money
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleSendMoney}
+                            fullWidth
+                            disabled={loading || upiLoading}
+                        >
+                            {loading ? <CircularProgress size={24} /> : 'Send Money'}
                         </Button>
                     </Box>
                     {message && (
-                        <Typography variant="body2" color="error" mt={2}>
+                        <Typography variant="body2" color={message.includes('successful') ? 'primary' : 'error'} mt={2}>
                             {message}
                         </Typography>
                     )}
