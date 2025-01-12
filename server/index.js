@@ -1,162 +1,211 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Container, Typography, Paper, Box, TextField, Button, CircularProgress } from '@mui/material';
-import { styled } from '@mui/system';
-import { useNavigate } from 'react-router-dom';
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 
-const PageContainer = styled(Paper)({
-    padding: '20px',
-    marginTop: '20px',
-    textAlign: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: '10px',
+const app = express();
+const PORT = process.env.PORT || 5000;
+const JWT_SECRET = 'your_jwt_secret_key';
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// MongoDB connection
+mongoose.connect('enter your mongodb url', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+.then(() => {
+    console.log('Connected to MongoDB');
+})
+.catch((err) => {
+    console.error(err);
 });
 
-function TransactionPage() {
-    const [user, setUser] = useState(null);
-    const [receiverUpiId, setReceiverUpiId] = useState('');
-    const [receiverName, setReceiverName] = useState('');
-    const [amount, setAmount] = useState('');
-    const [message, setMessage] = useState('');
-    const [loading, setLoading] = useState(false); // For loading spinner
-    const [upiLoading, setUpiLoading] = useState(false); // UPI verification spinner
-    const navigate = useNavigate();
+const userSchema = new mongoose.Schema({
+    email: { type: String, unique: true },
+    password: String,
+    phoneNumber: String,
+    balance: { type: Number, default: 100000 }, // Set initial balance to 100,000
+    userId: { type: String, unique: true, default: uuidv4 },
+    upiId: { type: String, unique: true, default: () => `upi-${uuidv4()}` },
+    savingsGoals: [{ goalName: String, targetAmount: Number, currentAmount: { type: Number, default: 0 } }],
+});
 
-    useEffect(() => {
-        const fetchUserData = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                navigate('/login'); // Redirect if no token
-                return;
-            }
-            try {
-                const response = await axios.get('http://localhost:5000/api/user', {
-                    params: { token },
-                });
-                setUser(response.data.user);
-            } catch (error) {
-                if (error.response && error.response.status === 401) {
-                    navigate('/login'); // Redirect to login if token is invalid
-                }
-                console.error('Error fetching user data:', error);
-            }
-        };
-        fetchUserData();
-    }, [navigate]);
+const transactionSchema = new mongoose.Schema({
+    senderId: String,
+    receiverId: String,
+    amount: Number,
+    date: { type: Date, default: Date.now },
+});
 
-    const handleReceiverUpiIdChange = async (e) => {
-        const upiId = e.target.value;
-        setReceiverUpiId(upiId);
-        setReceiverName(''); // Clear previous name
-        setMessage(''); // Clear error messages
-        if (!upiId) return;
+const recurringPaymentSchema = new mongoose.Schema({
+    userId: String,
+    receiverId: String,
+    amount: Number,
+    frequency: String, // e.g., 'daily', 'weekly', 'monthly'
+    nextPaymentDate: Date,
+});
 
-        setUpiLoading(true); // Show UPI loading spinner
-        try {
-            const response = await axios.get('http://localhost:5000/api/get-receiver', {
-                params: { upiId },
-            });
-            setReceiverName(response.data.name || 'Receiver not found');
-        } catch (error) {
-            console.error('Error fetching receiver data:', error);
-            setReceiverName('Error fetching receiver details');
-        } finally {
-            setUpiLoading(false); // Hide UPI loading spinner
+const User = mongoose.model('User', userSchema);
+const Transaction = mongoose.model('Transaction', transactionSchema);
+const RecurringPayment = mongoose.model('RecurringPayment', recurringPaymentSchema);
+
+// Routes
+app.post('/api/register', async (req, res) => {
+    const { email, password, phoneNumber } = req.body;
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).send('Email already registered');
         }
-    };
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new User({ email, password: hashedPassword, phoneNumber });
+        await user.save();
+        res.status(201).send(user);
+    } catch (error) {
+        console.error('Error during registration:', error);
+        res.status(500).send('Server error');
+    }
+});
 
-    const handleSendMoney = async () => {
-        const parsedAmount = parseFloat(amount);
-        if (!receiverUpiId || isNaN(parsedAmount) || parsedAmount <= 0) {
-            setMessage('Please enter a valid UPI ID and a positive amount.');
-            return;
+app.post('/api/login', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            console.error('Login failed: Invalid email');
+            return res.status(400).send('Invalid email or password');
         }
-        if (!receiverName || receiverName === 'Receiver not found') {
-            setMessage('Please confirm the receiver\'s details before proceeding.');
-            return;
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            console.error('Login failed: Invalid password');
+            return res.status(400).send('Invalid email or password');
         }
+        const token = jwt.sign({ userId: user._id }, JWT_SECRET);
+        res.send({ token });
+    } catch (error) {
+        console.error('Error during login:', error);
+        res.status(500).send('Server error');
+    }
+});
 
-        const token = localStorage.getItem('token');
-        setLoading(true); // Show loading spinner during the transaction
-        try {
-            await axios.post('http://localhost:5000/api/send-money', {
-                receiverUpiId,
-                amount: parsedAmount,
-                token,
-            });
-            setMessage('Transaction successful!');
-            setTimeout(() => navigate('/home'), 2000); // Navigate after success
-        } catch (error) {
-            setMessage('Transaction failed. Please try again.');
-            console.error('Error sending money:', error);
-        } finally {
-            setLoading(false); // Hide loading spinner
+app.get('/api/user', async (req, res) => {
+    const token = req.query.token;
+    if (!token) {
+        return res.status(401).send('Token is required');
+    }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user = await User.findById(decoded.userId);
+        const recurringPayments = await RecurringPayment.find({ userId: decoded.userId });
+        res.send({ user, recurringPayments });
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(401).send('Invalid token');
+    }
+});
+
+app.post('/api/send-money', async (req, res) => {
+    const { receiverUpiId, amount, token } = req.body;
+    if (!token) {
+        return res.status(401).send('Token is required');
+    }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const sender = await User.findById(decoded.userId);
+        if (sender.balance < amount) {
+            return res.status(400).send('Insufficient balance');
         }
-    };
+        const receiver = await User.findOne({ upiId: receiverUpiId });
+        if (!receiver) {
+            return res.status(400).send('Receiver not found');
+        }
+        sender.balance -= amount;
+        receiver.balance += amount;
+        await sender.save();
+        await receiver.save();
 
-    return (
-        <Container maxWidth="lg">
-            <PageContainer elevation={3}>
-                <Typography variant="h4" gutterBottom style={{ color: '#3f51b5' }}>
-                    Transaction Page
-                </Typography>
-                {user && (
-                    <Box>
-                        <Typography variant="h6">Name: {user.name}</Typography>
-                        <Typography variant="h6">Email: {user.email}</Typography>
-                        <Typography variant="body1">User ID: {user.userId}</Typography>
-                        <Typography variant="body1">UPI ID: {user.upiId}</Typography>
-                        <Typography variant="body1">Balance: ${user.balance}</Typography>
-                    </Box>
-                )}
-                <Box mt={3}>
-                    <TextField
-                        label="Receiver UPI ID"
-                        variant="outlined"
-                        fullWidth
-                        margin="normal"
-                        value={receiverUpiId}
-                        onChange={handleReceiverUpiIdChange}
-                        required
-                    />
-                    {upiLoading ? (
-                        <CircularProgress size={24} style={{ marginTop: 10 }} />
-                    ) : (
-                        receiverName && (
-                            <Typography variant="body2" color="textSecondary" mt={1}>
-                                Receiver Name: {receiverName}
-                            </Typography>
-                        )
-                    )}
-                    <TextField
-                        label="Amount"
-                        variant="outlined"
-                        fullWidth
-                        margin="normal"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        required
-                    />
-                    <Box mt={2}>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleSendMoney}
-                            fullWidth
-                            disabled={loading || upiLoading}
-                        >
-                            {loading ? <CircularProgress size={24} /> : 'Send Money'}
-                        </Button>
-                    </Box>
-                    {message && (
-                        <Typography variant="body2" color={message.includes('successful') ? 'primary' : 'error'} mt={2}>
-                            {message}
-                        </Typography>
-                    )}
-                </Box>
-            </PageContainer>
-        </Container>
-    );
-}
+        const transaction = new Transaction({
+            senderId: sender.userId,
+            receiverId: receiver.userId,
+            amount,
+        });
+        await transaction.save();
 
-export default TransactionPage;
+        res.send('Transaction successful');
+    } catch (error) {
+        console.error('Error during transaction:', error);
+        res.status(401).send('Invalid token');
+    }
+});
+
+app.get('/api/transactions', async (req, res) => {
+    const token = req.query.token;
+    if (!token) {
+        return res.status(401).send('Token is required');
+    }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const transactions = await Transaction.find({ senderId: decoded.userId });
+        res.send(transactions);
+    } catch (error) {
+        console.error('Error fetching transactions:', error);
+        res.status(401).send('Invalid token');
+    }
+});
+
+app.post('/api/recurring-payment', async (req, res) => {
+    const { receiverId, amount, frequency, token } = req.body;
+    if (!token) {
+        return res.status(401).send('Token is required');
+    }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const userId = decoded.userId;
+        const nextPaymentDate = new Date();
+        switch (frequency) {
+            case 'daily':
+                nextPaymentDate.setDate(nextPaymentDate.getDate() + 1);
+                break;
+            case 'weekly':
+                nextPaymentDate.setDate(nextPaymentDate.getDate() + 7);
+                break;
+            case 'monthly':
+                nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+                break;
+            default:
+                return res.status(400).send('Invalid frequency');
+        }
+        const recurringPayment = new RecurringPayment({ userId, receiverId, amount, frequency, nextPaymentDate });
+        await recurringPayment.save();
+        res.send('Recurring payment scheduled');
+    } catch (error) {
+        console.error('Error scheduling recurring payment:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+app.post('/api/savings-goal', async (req, res) => {
+    const { goalName, targetAmount, token } = req.body;
+    if (!token) {
+        return res.status(401).send('Token is required');
+    }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user = await User.findById(decoded.userId);
+        user.savingsGoals.push({ goalName, targetAmount });
+        await user.save();
+        res.send('Savings goal added');
+    } catch (error) {
+        console.error('Error adding savings goal:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
