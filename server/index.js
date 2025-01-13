@@ -4,6 +4,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
+const { name } = require('xml-name-validator');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -14,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB connection
-mongoose.connect('enter your mongodb url', {
+mongoose.connect('mongodb+srv://nikhithachatla6:nikhitha@digitalwallet.hbil4.mongodb.net/test', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })
@@ -26,10 +27,11 @@ mongoose.connect('enter your mongodb url', {
 });
 
 const userSchema = new mongoose.Schema({
+    name: { type: String, required: true },
     email: { type: String, unique: true },
     password: String,
     phoneNumber: String,
-    balance: { type: Number, default: 100000 }, // Set initial balance to 100,000
+    balance: { type: Number, default: 0 }, // Set initial balance to 100,000
     userId: { type: String, unique: true, default: uuidv4 },
     upiId: { type: String, unique: true, default: () => `upi-${uuidv4()}` },
     savingsGoals: [{ goalName: String, targetAmount: Number, currentAmount: { type: Number, default: 0 } }],
@@ -56,14 +58,14 @@ const RecurringPayment = mongoose.model('RecurringPayment', recurringPaymentSche
 
 // Routes
 app.post('/api/register', async (req, res) => {
-    const { email, password, phoneNumber } = req.body;
+    const { name, email, password, phoneNumber } = req.body;
     try {
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).send('Email already registered');
         }
         const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new User({ email, password: hashedPassword, phoneNumber });
+        const user = new User({ name, email, password: hashedPassword, phoneNumber });
         await user.save();
         res.status(201).send(user);
     } catch (error) {
@@ -189,6 +191,63 @@ app.post('/api/recurring-payment', async (req, res) => {
     }
 });
 
+// Endpoint to get receiver details by UPI ID
+app.get('/api/get-receiver', async (req, res) => {
+    const token = req.query.token;
+    const { upiId } = req.query;
+    if (!token) {
+        return res.status(401).send('Token is required');
+    }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        // Find the user with the specified UPI ID
+        const user = await User.findOne({ upiId: decoded.upiId });
+
+        if (!user) {
+            return res.status(404).send('Receiver not found' + upiId);
+        }
+
+        // Respond with the receiver's name
+        res.status(200).json({ name: user.name });
+        //const user = await User.findById(decoded.upiId);
+        console.log('receiver_user: ' + user);
+    } catch (error) {
+        console.error('Error fetching receiver user:', error);
+        res.status(401).send('Invalid token');
+    }
+
+
+    if (!upiId) {
+        return res.status(400).send('UPI ID is required');
+    }
+
+    try {
+
+    } catch (error) {
+        console.error('Error fetching receiver data:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+
+// app.get('/api/get-receiver', async (req, res) => {
+//     const token = req.query.token;
+//     if (!token) {
+//         return res.status(401).send('Token is required');
+//     }
+//     try {
+//         const decoded = jwt.verify(token, JWT_SECRET);
+//         const user = await User.findById(decoded.upiId);
+//         console.log('receiver_user: ' + user);
+//         //const recurringPayments = await RecurringPayment.find({ userId: decoded.userId });
+//         //res.send({ user, recurringPayments });
+//         res.send({ user });
+//     } catch (error) {
+//         console.error('Error fetching receiver user:', error);
+//         res.status(401).send('Invalid token');
+//     }
+// });
+
 app.post('/api/savings-goal', async (req, res) => {
     const { goalName, targetAmount, token } = req.body;
     if (!token) {
@@ -205,6 +264,15 @@ app.post('/api/savings-goal', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+//changes made in next 5 lines of the code below
+/*
+const userDetails = await UserModel.findById(userId); // Replace with your actual database query
+console.log(userDetails); // Ensure data is correct before sending the response
+res.status(200).json(userDetails);
+console.log("Middleware passed!");
+console.log("Request received:", req.body); // Backend
+console.log("API response:", response.data); // Frontend
+*/
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
