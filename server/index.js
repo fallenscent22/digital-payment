@@ -219,25 +219,6 @@ app.get('/api/get-receiver', async (req, res) => {
     }
 });
 
-
-// app.get('/api/get-receiver', async (req, res) => {
-//     const token = req.query.token;
-//     if (!token) {
-//         return res.status(401).send('Token is required');
-//     }
-//     try {
-//         const decoded = jwt.verify(token, JWT_SECRET);
-//         const user = await User.findById(decoded.upiId);
-//         console.log('receiver_user: ' + user);
-//         //const recurringPayments = await RecurringPayment.find({ userId: decoded.userId });
-//         //res.send({ user, recurringPayments });
-//         res.send({ user });
-//     } catch (error) {
-//         console.error('Error fetching receiver user:', error);
-//         res.status(401).send('Invalid token');
-//     }
-// });
-
 app.post('/api/savings-goal', async (req, res) => {
     const { goalName, targetAmount, token } = req.body;
     if (!token) {
