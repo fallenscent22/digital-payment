@@ -8,7 +8,9 @@ const { name } = require('xml-name-validator');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = 'your_jwt_secret_key';
+//const JWT_SECRET = 'your_jwt_secret_key';
+//**********************************************************new chnage below line .............................................. */
+const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_key'; 
 
 // Middleware
 app.use(cors());
@@ -194,38 +196,26 @@ app.post('/api/recurring-payment', async (req, res) => {
 // Endpoint to get receiver details by UPI ID
 app.get('/api/get-receiver', async (req, res) => {
     const token = req.query.token;
-    const { upiId } = req.query;
+    const { upiId } = req.query; // Extract upiId from query params
     if (!token) {
         return res.status(401).send('Token is required');
     }
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        // Find the user with the specified UPI ID
-        const user = await User.findOne({ upiId: decoded.upiId });
-
-        if (!user) {
-            return res.status(404).send('Receiver not found' + upiId);
-        }
-
-        // Respond with the receiver's name
-        res.status(200).json({ name: user.name });
-        //const user = await User.findById(decoded.upiId);
-        console.log('receiver_user: ' + user);
-    } catch (error) {
-        console.error('Error fetching receiver user:', error);
-        res.status(401).send('Invalid token');
-    }
-
-
     if (!upiId) {
         return res.status(400).send('UPI ID is required');
     }
-
     try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        // Find the receiver by UPI ID from the query parameter
+        const receiver = await User.findOne({ upiId: upiId }); // Search by the UPI ID provided in the query
 
+        if (!receiver) {
+            return res.status(404).send('Receiver not found with UPI ID: ' + upiId); // More descriptive error message
+        }
+
+        res.status(200).json({ name: receiver.name }); // Send the receiver's name in the response
     } catch (error) {
-        console.error('Error fetching receiver data:', error);
-        res.status(500).send('Server error');
+        console.error('Error fetching receiver user:', error);
+        res.status(401).send('server error');
     }
 });
 
@@ -264,16 +254,6 @@ app.post('/api/savings-goal', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
-//changes made in next 5 lines of the code below
-/*
-const userDetails = await UserModel.findById(userId); // Replace with your actual database query
-console.log(userDetails); // Ensure data is correct before sending the response
-res.status(200).json(userDetails);
-console.log("Middleware passed!");
-console.log("Request received:", req.body); // Backend
-console.log("API response:", response.data); // Frontend
-*/
-
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
