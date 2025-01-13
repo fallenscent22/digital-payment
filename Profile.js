@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Container, Typography, Paper, Box } from '@mui/material';
+import { Container, Typography, Paper, Box, CircularProgress } from '@mui/material';
 import { styled } from '@mui/system';
 
 const ProfileContainer = styled(Paper)({
@@ -13,21 +13,41 @@ const ProfileContainer = styled(Paper)({
 
 function Profile() {
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchUserData = async () => {
             const token = localStorage.getItem('token');
+            if (!token) {
+                setError('No token found. Please log in again.');
+                setLoading(false);
+                return;
+            }
+
             try {
                 const response = await axios.get('http://localhost:5000/api/user', {
-                    params: { token }
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 });
                 setUser(response.data);
+                setLoading(false);
             } catch (error) {
-                console.error('Error fetching user data:', error);
+                setError('Error fetching user data. Please try again.');
+                setLoading(false);
             }
         };
         fetchUserData();
     }, []);
+
+    if (loading) {
+        return <CircularProgress />;
+    }
+
+    if (error) {
+        return <Typography color="error">{error}</Typography>;
+    }
 
     return (
         <Container maxWidth="sm">

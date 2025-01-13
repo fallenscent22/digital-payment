@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Container, TextField, Button, Typography, Box, Paper, IconButton } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Container, TextField, Button, Typography, Box, Paper, FormControlLabel, Checkbox } from '@mui/material';
 import { styled } from '@mui/system';
 import axios from 'axios';
 
@@ -22,8 +21,8 @@ const FormContainer = styled(Paper)({
 function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
-    const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
     const navigate = useNavigate();
 
     const handleSubmit = async (event) => {
@@ -71,23 +70,15 @@ function Login() {
                         variant="outlined"
                         fullWidth
                         margin="normal"
-                        type={showPassword ? 'text' : 'password'} // Toggle password visibility
+                        type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        InputProps={{
-                            endAdornment: (
-                                <IconButton
-                                    position="end"
-                                    onClick={() => setShowPassword(!showPassword)} // Toggle showPassword state
-                                    edge="end"
-                                >
-                                    {showPassword ? <VisibilityOff /> : <Visibility />} {/* Conditionally render the eye icon */}
-                                </IconButton>
-                            ),
-                        }}
                     />
-            
+                    <FormControlLabel
+                        control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />}
+                        label="Remember me"
+                    />
                     {error && (
                         <Typography variant="body2" color="error">
                             {error}
@@ -99,6 +90,13 @@ function Login() {
                         </Button>
                     </Box>
                 </form>
+
+                {/* Forgot Password Link */}
+                <Box mt={2}>
+                    <Typography variant="body2">
+                        <Link to="/forgot-password">Forgot your password?</Link>
+                    </Typography>
+                </Box>
 
                 {/* Signup Link */}
                 <Box mt={2}>

@@ -74,7 +74,6 @@ function Home() {
                     <Box>
                         <Typography variant="h6">Name:{user.name}</Typography>
                         <Typography variant="h6">Email: {user.email}</Typography>
-                        <Typography variant="body1">User ID: {user.userId}</Typography>
                         <Typography variant="body1">UPI ID: {user.upiId}</Typography>
                         <Typography variant="body1">Balance: ${user.balance}</Typography>
                     </Box>
