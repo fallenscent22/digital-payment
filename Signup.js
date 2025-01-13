@@ -19,6 +19,7 @@ const FormContainer = styled(Paper)({
 });
 
 function Signup() {
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -29,7 +30,7 @@ function Signup() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
-            await axios.post('http://localhost:5000/api/register', { email, password, phoneNumber });
+            await axios.post('http://localhost:5000/api/register', { name, email, password, phoneNumber });
             alert('Signup Successful!');
             navigate('/login'); // Navigate to the login page after signup
         } catch (error) {
@@ -56,6 +57,15 @@ function Signup() {
 
                 {/* Signup Form */}
                 <form onSubmit={handleSubmit}>
+                <TextField
+                        label="Name"
+                        variant="outlined"
+                        fullWidth
+                        margin="normal"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                    />
                     <TextField
                         label="Email"
                         variant="outlined"
