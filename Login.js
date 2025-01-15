@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Container, TextField, Button, Typography, Box, Paper, FormControlLabel, Checkbox } from '@mui/material';
+import { Container, TextField, Button, Typography, Box, Paper, InputAdornment, IconButton} from '@mui/material';
 import { styled } from '@mui/system';
 import axios from 'axios';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 const FormContainer = styled(Paper)({
     padding: '20px',
@@ -21,7 +23,7 @@ const FormContainer = styled(Paper)({
 function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [rememberMe, setRememberMe] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);  // New state for password visibility
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
@@ -50,7 +52,7 @@ function Login() {
                 </Box>
 
                 {/* Headline */}
-                <Typography variant="h4" gutterBottom>
+                <Typography variant="h4" gutterBottom sx={{ color: 'white' }}>
                     Digital Payment
                 </Typography>
 
@@ -64,21 +66,40 @@ function Login() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
+                        InputProps={{
+                            style: { color: 'white' }, // Set the typed text color to white
+                        }}
+                        InputLabelProps={{
+                            style: { color: 'white' }, // Set the label (placeholder) text color to white
+                        }}
                     />
                     <TextField
                         label="Password"
                         variant="outlined"
                         fullWidth
                         margin="normal"
-                        type="password"
+                        type={showPassword ? 'text' : 'password'}  // Toggle password visibility
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
+                        InputProps={{
+                            style: { color: 'white' }, // Set the typed text color to white
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        edge="end"
+                                    >
+                                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        }}
+                        InputLabelProps={{
+                            style: { color: 'white' }, // Set the label (placeholder) text color to white
+                        }}
                     />
-                    <FormControlLabel
-                        control={<Checkbox checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />}
-                        label="Remember me"
-                    />
+
                     {error && (
                         <Typography variant="body2" color="error">
                             {error}
@@ -90,18 +111,11 @@ function Login() {
                         </Button>
                     </Box>
                 </form>
-
-                {/* Forgot Password Link */}
-                <Box mt={2}>
-                    <Typography variant="body2">
-                        <Link to="/forgot-password">Forgot your password?</Link>
-                    </Typography>
-                </Box>
-
+                
                 {/* Signup Link */}
                 <Box mt={2}>
-                    <Typography variant="body2">
-                        Don't have an account? <Link to="/signup">Signup</Link>
+                    <Typography variant="body2" sx={{ color: 'white' }}>
+                        Don't have an account? <Link to="/signup" style={{ color: '#ADD8E6', textDecoration: 'none' }}>Signup</Link>
                     </Typography>
                 </Box>
             </FormContainer>
