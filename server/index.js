@@ -8,8 +8,6 @@ const { name } = require('xml-name-validator');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-//const JWT_SECRET = 'your_jwt_secret_key';
-//**********************************************************new chnage below line .............................................. */
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_key'; 
 
 // Middleware
@@ -17,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB connection
-mongoose.connect('mongodb url', {
+mongoose.connect('mongodb+srv://nikhithachatla6:nikhitha@digitalwallet.hbil4.mongodb.net/', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })
@@ -35,7 +33,7 @@ const userSchema = new mongoose.Schema({
     phoneNumber: String,
     balance: { type: Number, default: 0 }, // Set initial balance to 100,000
     userId: { type: String, unique: true, default: uuidv4 },
-    upiId: { type: String, unique: true, default: () => `upi-${uuidv4()}` },
+    upiId: { type: String, unique: true, default: (function() { return `${this.phoneNumber}@softpay`; }) },
     savingsGoals: [{ goalName: String, targetAmount: Number, currentAmount: { type: Number, default: 0 } }],
 });
 
@@ -114,7 +112,7 @@ app.get('/api/user', async (req, res) => {
 });
 
 app.post('/api/send-money', async (req, res) => {
-    const { receiverUpiId, amount, token } = req.body;
+    const { receiverPhoneNumber, amount, token } = req.body;
     if (!token) {
         return res.status(401).send('Token is required');
     }
@@ -124,7 +122,7 @@ app.post('/api/send-money', async (req, res) => {
         if (sender.balance < amount) {
             return res.status(400).send('Insufficient balance');
         }
-        const receiver = await User.findOne({ upiId: receiverUpiId });
+        const receiver = await User.findOne({ upiId: receiverPhoneNumber});
         if (!receiver) {
             return res.status(400).send('Receiver not found');
         }
@@ -163,13 +161,22 @@ app.get('/api/transactions', async (req, res) => {
 });
 
 app.post('/api/recurring-payment', async (req, res) => {
-    const { receiverId, amount, frequency, token } = req.body;
+    const { receiverPhoneNumber, amount, frequency, token } = req.body;
     if (!token) {
         return res.status(401).send('Token is required');
+    }
+    if (!receiverPhoneNumber) {
+        return res.status(400).send('Receiver phone number is required');
     }
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         const userId = decoded.userId;
+         // Fetch the receiver details using the phone number
+         const receiver = await User.findOne({ phoneNumber: receiverPhoneNumber });
+         if (!receiver) {
+             return res.status(404).send('Receiver not found');
+         }
+
         const nextPaymentDate = new Date();
         switch (frequency) {
             case 'daily':
@@ -184,7 +191,7 @@ app.post('/api/recurring-payment', async (req, res) => {
             default:
                 return res.status(400).send('Invalid frequency');
         }
-        const recurringPayment = new RecurringPayment({ userId, receiverId, amount, frequency, nextPaymentDate });
+        const recurringPayment = new RecurringPayment({ userId, receiverId: receiver.userId, amount, frequency, nextPaymentDate });
         await recurringPayment.save();
         res.send('Recurring payment scheduled');
     } catch (error) {
@@ -196,23 +203,23 @@ app.post('/api/recurring-payment', async (req, res) => {
 // Endpoint to get receiver details by UPI ID
 app.get('/api/get-receiver', async (req, res) => {
     const token = req.query.token;
-    const { upiId } = req.query; // Extract upiId from query params
+    const { phoneNumber } = req.query; // Extract upiId from query params
     if (!token) {
         return res.status(401).send('Token is required');
     }
-    if (!upiId) {
-        return res.status(400).send('UPI ID is required');
+    if (!phoneNumber) {
+        return res.status(400).send('Phone number is required');
     }
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        // Find the receiver by UPI ID from the query parameter
-        const receiver = await User.findOne({ upiId: upiId }); // Search by the UPI ID provided in the query
+        // Find the receiver by phone number from the query parameter
+        const receiver = await User.findOne({ phoneNumber: phoneNumber }); // Search by the phone number provided in the query
 
         if (!receiver) {
-            return res.status(404).send('Receiver not found with UPI ID: ' + upiId); // More descriptive error message
+            return res.status(404).send('Receiver not found with Phone number: ' + phoneNumber); // More descriptive error message
         }
 
-        res.status(200).json({ name: receiver.name }); // Send the receiver's name in the response
+        res.status(200).json({ name: receiver.name , upiId: receiver.upiId}); // Send the receiver's name and upi id in the response
     } catch (error) {
         console.error('Error fetching receiver user:', error);
         res.status(401).send('server error');
