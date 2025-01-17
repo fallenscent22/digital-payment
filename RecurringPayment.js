@@ -12,15 +12,38 @@ const PageContainer = styled(Paper)({
 });
 
 function RecurringPayment() {
-    const [receiverId, setReceiverId] = useState('');
-    const [amount, setAmount] = useState('');
+    const [receiverPhoneNumber, setReceiverPhoneNumber] = useState('');
+    const [receiverName, setReceiverName] = useState('');    const [amount, setAmount] = useState('');
     const [frequency, setFrequency] = useState('');
     const [message, setMessage] = useState('');
+    //const [loading, setLoading] = useState(false);
+
+    const [loading] = useState(false);
+
+    const handleReceiverPhoneNumberChange = async (e) => {
+        const phoneNumber = e.target.value;
+        setReceiverPhoneNumber(phoneNumber);
+        setMessage('');
+        setReceiverName('');
+
+        if (phoneNumber) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await axios.get('http://localhost:5000/api/get-receiver', {
+                    params: { phoneNumber, token },
+                });
+                setReceiverName(response.data.name || 'Receiver not found');
+            } catch (error) {
+                console.error('Error fetching receiver details:', error);
+                setReceiverName('Error fetching receiver details');
+            }
+        }
+    };
 
     const handleSchedulePayment = async () => {
         const token = localStorage.getItem('token');
         try {
-            await axios.post('http://localhost:5000/api/recurring-payment', { receiverId, amount, frequency, token });
+            await axios.post('http://localhost:5000/api/recurring-payment', { receiverPhoneNumber, amount, frequency, token });
             setMessage('Recurring payment scheduled');
         } catch (error) {
             setMessage('Failed to schedule recurring payment');
@@ -36,14 +59,19 @@ function RecurringPayment() {
                 </Typography>
                 <Box mt={3}>
                     <TextField
-                        label="Receiver ID"
+                        label="Receiver Phone Number"
                         variant="outlined"
                         fullWidth
                         margin="normal"
-                        value={receiverId}
-                        onChange={(e) => setReceiverId(e.target.value)}
+                        value={receiverPhoneNumber}
+                        onChange={handleReceiverPhoneNumberChange}
                         required
                     />
+                    {receiverName && (
+                        <Typography variant="body2" color={receiverName === 'Receiver not found' ? 'error' : 'textSecondary'} mt={1}>
+                            Receiver Name: {receiverName}
+                        </Typography>
+                    )}
                     <TextField
                         label="Amount"
                         variant="outlined"
@@ -68,12 +96,12 @@ function RecurringPayment() {
                         <MenuItem value="monthly">Monthly</MenuItem>
                     </TextField>
                     <Box mt={2}>
-                        <Button variant="contained" color="primary" onClick={handleSchedulePayment} fullWidth>
-                            Schedule Payment
+                        <Button variant="contained" color="primary" onClick={handleSchedulePayment} fullWidth disabled={loading}>
+                        {loading ? 'Scheduling...' : 'Schedule Payment'}
                         </Button>
                     </Box>
                     {message && (
-                        <Typography variant="body2" color="error" mt={2}>
+                        <Typography variant="body2" color={message.includes('successfully') ? 'primary' : 'error'} mt={2}>
                             {message}
                         </Typography>
                     )}
