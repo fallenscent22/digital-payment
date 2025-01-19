@@ -1,43 +1,26 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate, Link, useLocation } from 'react-router-dom';
-import { Container, AppBar, Toolbar, Typography, Button } from '@mui/material';
-import Login from './Login';
-import Signup from './Signup';
-import Profile from './Profile';
-import TransactionPage from './TransactionPage';
-import Home from './Home';
-import HelpCentre from './HelpCentre';
-import RecurringPayment from './RecurringPayment';
-import SmartSavings from './SmartSavings';
-
-function NavigationBar() {
-    return (
-        <AppBar position="static">
-            <Toolbar>
-                <Typography variant="h6" style={{ flexGrow: 1 }}>
-                    Digital Payment
-                </Typography>
-                <Button color="inherit" component={Link} to="/home">Home</Button>
-                <Button color="inherit" component={Link} to="/transactions">Transaction</Button>
-                <Button color="inherit" component={Link} to="/recurring-payment">Recurring Payment</Button>
-                <Button color="inherit" component={Link} to="/smart-savings">Smart Savings</Button>
-                <Button color="inherit" component={Link} to="/signup">Signup</Button>
-                <Button color="inherit" component={Link} to="/helpcentre">Help Centre</Button>
-            </Toolbar>
-        </AppBar>
-    );
-}
+import React from "react";
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from "react-router-dom";
+import { Container } from "@mui/material";
+import Navbar from "./Navbar"; // Import Navbar component
+import Login from "./Login"; // Login page
+import Signup from "./Signup"; // Signup page
+import Home from "./Home"; // Home page
+import TransactionPage from "./TransactionPage"; // Transactions page
+import HelpCentre from "./HelpCentre"; // Help Center page
+import RecurringPayment from "./RecurringPayment"; // Recurring Payment page
+import SmartSavings from "./SmartSavings"; // Smart Savings page
+import Logout from "./Logout"; // Logout component
 
 function AppLayout({ children }) {
     const location = useLocation();
 
     // Hide Navbar for Login and Signup pages
-    const hideNavbar = location.pathname === '/login' || location.pathname === '/signup';
+    const hideNavbar = location.pathname === "/login" || location.pathname === "/signup";
 
     return (
         <>
-            {!hideNavbar && <NavigationBar />}
-            {children}
+            {!hideNavbar && <Navbar />}
+            <div>{children}</div>
         </>
     );
 }
@@ -50,13 +33,13 @@ function App() {
                     <Routes>
                         <Route path="/login" element={<Login />} />
                         <Route path="/signup" element={<Signup />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/transactions" element={<TransactionPage />} />
                         <Route path="/home" element={<Home />} />
-                        <Route path="/helpcentre" element={<HelpCentre />} />
+                        <Route path="/transactions" element={<TransactionPage />} />
+                        <Route path="/help" element={<HelpCentre />} /> {/* Ensure the route matches Navbar */}
                         <Route path="/recurring-payment" element={<RecurringPayment />} />
                         <Route path="/smart-savings" element={<SmartSavings />} />
-                        <Route path="/" element={<Navigate to="/login" />} />
+                        <Route path="/logout" element={<Logout />} />
+                        <Route path="/" element={<Navigate to="/login" />} /> {/* Redirect to login */}
                     </Routes>
                 </AppLayout>
             </Container>
