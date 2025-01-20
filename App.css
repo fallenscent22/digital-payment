@@ -1,6 +1,6 @@
 body {
   font-family: Arial, sans-serif;
-  background-color: #f4f4f4;
+  background-color:  #f4f4f4;
   margin: 0;
   display: flex;
   justify-content: center;
@@ -20,4 +20,14 @@ body {
 
 .MuiButton-containedPrimary:hover {
   background-color: #218838;
+}
+
+/*making text visible in input fields*/
+.text-field-input {
+  color: white; /* Input text color */
+  background-color: white; /* Input background color */
+}
+
+.text-field-label {
+  color: black; /* Placeholder and label color */
 }

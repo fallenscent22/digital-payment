@@ -8,19 +8,19 @@ const PageContainer = styled(Paper)({
     padding: '20px',
     marginTop: '20px',
     textAlign: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f5f5f5',  
     borderRadius: '10px',
 });
 
 function TransactionPage() {
     const [user, setUser] = useState(null);
-    const [receiverUpiId, setReceiverUpiId] = useState('');
+    const [receiverPhoneNumber, setReceiverPhoneNumber] = useState('');
     const [receiverName, setReceiverName] = useState('');
     const [amount, setAmount] = useState('');
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
-    const [upiLoading, setUpiLoading] = useState(false);
-    const [debouncedUpiId, setDebouncedUpiId] = useState('');
+    const [phoneNumberLoading, setPhoneNumberLoading] = useState(false);
+    const [debouncedPhoneNumber, setDebouncedPhoneNumber] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -46,36 +46,36 @@ function TransactionPage() {
     }, [navigate]);
 
     useEffect(() => {
-        if (!debouncedUpiId) return;
+        if (!debouncedPhoneNumber) return;
 
         const fetchReceiverData = async () => {
             setReceiverName('');
-            setUpiLoading(true);
+            setPhoneNumberLoading(true);
             try {
                 const response = await axios.get('http://localhost:5000/api/get-receiver', {
-                    params: { upiId: debouncedUpiId,token:localStorage.getItem('token') },
+                    params: {  phoneNumber: debouncedPhoneNumber ,token:localStorage.getItem('token') },
                 });
                 setReceiverName(response.data.name || 'Receiver not found');
             } catch (error) {
                 console.error('Error fetching receiver data:', error);
                 setReceiverName('Error fetching receiver details');
             } finally {
-                setUpiLoading(false);
+                setPhoneNumberLoading(false);
             }
         };
 
         fetchReceiverData();
-    }, [debouncedUpiId]);
+    }, [debouncedPhoneNumber]);
 
-    const handleReceiverUpiIdChange = (e) => {
-        const upiId = e.target.value;
-        setReceiverUpiId(upiId);
+    const handleReceiverPhoneNumberChange = (e) => {
+        const phoneNumber = e.target.value;
+        setReceiverPhoneNumber(phoneNumber);
         setMessage('');
-        if (upiId) {
+        if (phoneNumber) {
             // Debouncing the input to reduce API calls
             clearTimeout(window.debounceTimeout);
             window.debounceTimeout = setTimeout(() => {
-                setDebouncedUpiId(upiId);
+                setDebouncedPhoneNumber(phoneNumber);
             }, 500); // Adjust the debounce delay as needed
         } else {
             setReceiverName('');
@@ -84,8 +84,8 @@ function TransactionPage() {
 
     const handleSendMoney = async () => {
         const parsedAmount = parseFloat(amount);
-        if (!receiverUpiId || isNaN(parsedAmount) || parsedAmount <= 0) {
-            setMessage('Please enter a valid UPI ID and a positive amount.');
+        if (!receiverPhoneNumber || isNaN(parsedAmount) || parsedAmount <= 0) {
+            setMessage('Please enter a valid Phone Number and a positive amount.');
             return;
         }
         if (!receiverName || receiverName === 'Receiver not found') {
@@ -97,7 +97,7 @@ function TransactionPage() {
         setLoading(true);
         try {
             await axios.post('http://localhost:5000/api/send-money', {
-                receiverUpiId,
+                receiverPhoneNumber,
                 amount: parsedAmount,
                 token,
             });
@@ -123,20 +123,21 @@ function TransactionPage() {
                         <Typography variant="h6">Email: {user.email}</Typography>
                         <Typography variant="body1">User ID: {user.userId}</Typography>
                         <Typography variant="body1">UPI ID: {user.upiId}</Typography>
+                       {/* <Typography variant="body1">Phone Number: {user.phoneNumber}</Typography>*/}
                         <Typography variant="body1">Balance: ${user.balance}</Typography>
                     </Box>
                 )}
                 <Box mt={3}>
                     <TextField
-                        label="Receiver UPI ID"
+                        label="Receiver Phone Number"
                         variant="outlined"
                         fullWidth
                         margin="normal"
-                        value={receiverUpiId}
-                        onChange={handleReceiverUpiIdChange}
+                        value={receiverPhoneNumber}
+                        onChange={handleReceiverPhoneNumberChange}
                         required
                     />
-                    {upiLoading ? (
+                    {phoneNumberLoading? (
                         <CircularProgress size={24} style={{ marginTop: 10 }} />
                     ) : (
                         receiverName && (
@@ -160,7 +161,7 @@ function TransactionPage() {
                             color="primary"
                             onClick={handleSendMoney}
                             fullWidth
-                            disabled={loading || upiLoading}
+                            disabled={loading || phoneNumberLoading}
                         >
                             {loading ? <CircularProgress size={24} /> : 'Send Money'}
                         </Button>
@@ -177,4 +178,3 @@ function TransactionPage() {
 }
 
 export default TransactionPage;
-
