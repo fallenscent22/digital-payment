@@ -40,6 +40,7 @@ function App() {
                         <Route path="/smart-savings" element={<SmartSavings />} />
                         <Route path="/logout" element={<Logout />} />
                         <Route path="/" element={<Navigate to="/login" />} /> {/* Redirect to login */}
+                      {/*  <Route path="/profile" element={<Profile />} /> */}
                     </Routes>
                 </AppLayout>
             </Container>
