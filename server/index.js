@@ -270,7 +270,7 @@ app.post('/api/payment/create-payment-intent', async (req, res) => {
 
     try {
         const paymentIntent = await stripe.paymentIntents.create({
-            amount,
+            amount: Math.round(parseFloat(amount) * 100), // stripe expects smallest currency unit
             currency: 'INR',
         });
 
