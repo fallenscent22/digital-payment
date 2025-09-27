@@ -27,6 +27,8 @@ const TransactionItem = styled(ListItem)({
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
 });
 
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 function Home() {
     const [user, setUser] = useState(null);
     const [transactions, setTransactions] = useState([]);
@@ -35,7 +37,7 @@ function Home() {
         const fetchUserData = async () => {
             const token = localStorage.getItem('token');
             try {
-                const response = await axios.get(`${API_BASE_URL}/api/user`, {
+                const response = await axios.get(`${REACT_APP_API_BASE_URL}/api/user`, {
                     params: { token }
                 });
                 setUser(response.data.user);
@@ -47,7 +49,7 @@ function Home() {
         const fetchTransactions = async () => {
             const token = localStorage.getItem('token');
             try {
-                const response = await axios.get(`${API_BASE_URL}/api/transactions`, {
+                const response = await axios.get(`${REACT_APP_API_BASE_URL}/api/transactions`, {
                     params: { token }
                 });
                 setTransactions(response.data);

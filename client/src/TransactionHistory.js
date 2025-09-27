@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Container, Typography, Paper, Box } from '@mui/material';
 
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 function formatINR(amount) {
     return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

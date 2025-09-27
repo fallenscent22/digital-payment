@@ -20,6 +20,7 @@ const FormContainer = styled(Paper)({
     alignItems: 'center',
 });
 
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -30,7 +31,7 @@ function Login() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
-            const response = await axios.post(`${API_BASE_URL}/api/login`, { email, password });
+            const response = await axios.post(`${REACT_APP_API_BASE_URL}/api/login`, { email, password });
             localStorage.setItem('token', response.data.token);
             alert('Login Successful!');
             navigate('/home'); // Navigate to the home page after login
