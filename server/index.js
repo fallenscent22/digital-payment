@@ -89,14 +89,14 @@ app.post('/api/login', async (req, res) => {
         const user = await User.findOne({ email });
         if (!user) {
             console.error('Login failed: Invalid email');
-            return res.status(400).send('Invalid email or password');
+            return res.status(400).send('Invalid email');
         }
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             console.error('Login failed: Invalid password');
-            return res.status(400).send('Invalid email or password');
+            return res.status(400).send('Invalid password');
         }
-        const token = jwt.sign({ userId: user._id }, JWT_SECRET);
+        const token = jwt.sign({ userId: user.userId }, JWT_SECRET);
         res.send({ token });
     } catch (error) {
         console.error('Error during login:', error);
@@ -138,7 +138,7 @@ app.post('/api/send-money', async (req, res) => {
     }
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        const sender = await User.findById(decoded.userId);
+        const sender = await User.findOne({ userId: decoded.userId });
         if (sender.balance < amount) {
             return res.status(400).send('Insufficient balance');
         }
@@ -204,10 +204,13 @@ app.get('/api/transactions', async (req, res) => {
                 ...tx.toObject(),
                 receiverName: receiver ? receiver.name : 'Unknown',
                 receiverPhoneNumber: receiver ? receiver.phoneNumber : '',
+
             };
         }));
 
         res.send(transactionsWithReceiver);
+        console.log("Decoded userId:", decoded.userId);                      // newwwwwwwwwwwwwwwwwww
+        console.log("Transactions found:", transactions);                   // newwwwwwwwwwwwwwwwwwww
     } catch (error) {
         res.status(401).send('Invalid token');
     }
@@ -307,7 +310,7 @@ app.post('/api/savings-goal', async (req, res) => {
     }
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        const user = await User.findById(decoded.userId);
+        const user = await User.findOne({ userId: decoded.userId });
         user.savingsGoals.push({ goalName, targetAmount });
         await user.save();
         res.send('Savings goal added');

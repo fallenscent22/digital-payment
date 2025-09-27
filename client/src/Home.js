@@ -93,7 +93,7 @@ function Home() {
                         <ListItem key={transaction._id}>
                             <ListItemText
                                primary={`Amount: $${transaction.amount}`}
-                               secondary={`To: ${transaction.receiverId} on ${new Date(transaction.date).toLocaleString()}`}
+                               secondary={`To: ${transaction.receiverName} on ${new Date(transaction.date).toLocaleString()}`}
                             />
                         </ListItem>
                     ))}
