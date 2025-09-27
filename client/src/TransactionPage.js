@@ -121,9 +121,16 @@ function TransactionPage() {
 
     const handleSendMoney = async () => {
         const parsedAmount = parseFloat(amount);
+
         // Prevent sending money to self
         if (receiverPhoneNumber === user?.phoneNumber) {
             setMessage("You cannot send money to yourself.");
+            return;
+        }
+
+        // Minimum Stripe amount check (₹0.50)
+        if (isNaN(parsedAmount) || parsedAmount < 0.5) {
+            setMessage("Amount must be at least ₹0.50.");
             return;
         }
 
@@ -132,8 +139,9 @@ function TransactionPage() {
             setMessage(`Insufficient balance. Your balance is ${formatINR(user.balance)}.`);
             return;
         }
-        if (!receiverPhoneNumber || isNaN(parsedAmount) || parsedAmount <= 0) {
-            setMessage('Please enter a valid Phone Number and a positive amount.');
+
+        if (!receiverPhoneNumber) {
+            setMessage('Please enter a valid Phone Number.');
             return;
         }
         if (!receiverName || receiverName === 'Receiver not found') {
@@ -200,7 +208,7 @@ function TransactionPage() {
                         <Typography variant="h6">Email: {user.email}</Typography>
                         <Typography variant="body1">User ID: {user.userId}</Typography>
                         <Typography variant="body1">UPI ID: {user.upiId}</Typography>
-                        <Typography variant="body1">Balance: ${user.balance}</Typography>
+                        <Typography variant="body1">Balance: {formatINR(user.balance)}</Typography>
                     </Box>
                 )}
                 <Box mt={3}>
@@ -286,6 +294,10 @@ function TransactionPage() {
             </PageContainer>
         </Container>
     );
+}
+
+function formatINR(amount) {
+    return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export default TransactionPage;
