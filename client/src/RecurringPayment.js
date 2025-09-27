@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Container, Typography, Paper, Box, TextField, Button, MenuItem } from '@mui/material';
+import { Container, Typography, Paper, Box, TextField, Button, MenuItem, CircularProgress } from '@mui/material';
 import { styled } from '@mui/system';
 
 const PageContainer = styled(Paper)({
@@ -11,43 +11,80 @@ const PageContainer = styled(Paper)({
     borderRadius: '10px',
 });
 
+function formatINR(amount) {
+    return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function RecurringPayment() {
     const [receiverPhoneNumber, setReceiverPhoneNumber] = useState('');
-    const [receiverName, setReceiverName] = useState('');    const [amount, setAmount] = useState('');
+    const [receiverName, setReceiverName] = useState('');
+    const [amount, setAmount] = useState('');
     const [frequency, setFrequency] = useState('');
     const [message, setMessage] = useState('');
-    //const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [phoneNumberLoading, setPhoneNumberLoading] = useState(false);
+    const [debouncedPhoneNumber, setDebouncedPhoneNumber] = useState('');
+    const [recurringPayments, setRecurringPayments] = useState([]);
 
-    const [loading] = useState(false);
+    useEffect(() => {
+        // Fetch all recurring payments for logged-in user
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        axios.get('http://localhost:5000/api/user', { params: { token } })
+            .then(res => {
+                setRecurringPayments(res.data.recurringPayments || []);
+            })
+            .catch(() => setRecurringPayments([]));
+    }, []);
 
-    const handleReceiverPhoneNumberChange = async (e) => {
+    const handleReceiverPhoneNumberChange = (e) => {
         const phoneNumber = e.target.value;
         setReceiverPhoneNumber(phoneNumber);
         setMessage('');
-        setReceiverName('');
-
-        if (phoneNumber) {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await axios.get('http://localhost:5000/api/get-receiver', {
-                    params: { phoneNumber, token },
-                });
-                setReceiverName(response.data.name || 'Receiver not found');
-            } catch (error) {
-                console.error('Error fetching receiver details:', error);
-                setReceiverName('Error fetching receiver details');
-            }
+        clearTimeout(window.debounceTimeout);
+        if (phoneNumber.length === 10) {
+            window.debounceTimeout = setTimeout(() => {
+                setDebouncedPhoneNumber(phoneNumber);
+            }, 500);
+        } else {
+            setReceiverName('');
         }
     };
 
+    useEffect(() => {
+        if (debouncedPhoneNumber.length !== 10) return;
+        const fetchReceiverData = async () => {
+            setReceiverName('');
+            setPhoneNumberLoading(true);
+            try {
+                const token = localStorage.getItem('token');
+                const response = await axios.get('http://localhost:5000/api/get-receiver', {
+                    params: { phoneNumber: debouncedPhoneNumber, token },
+                });
+                setReceiverName(response.data.name || 'Receiver not found');
+            } catch (error) {
+                setReceiverName('Error fetching receiver details');
+            } finally {
+                setPhoneNumberLoading(false);
+            }
+        };
+        fetchReceiverData();
+    }, [debouncedPhoneNumber]);
+
     const handleSchedulePayment = async () => {
         const token = localStorage.getItem('token');
+        if (!token) return;
+        setLoading(true);
         try {
             await axios.post('http://localhost:5000/api/recurring-payment', { receiverPhoneNumber, amount, frequency, token });
             setMessage('Recurring payment scheduled');
+            // Optionally refresh recurring payments list
+            const res = await axios.get('http://localhost:5000/api/user', { params: { token } });
+            setRecurringPayments(res.data.recurringPayments || []);
         } catch (error) {
             setMessage('Failed to schedule recurring payment');
-            console.error('Error scheduling recurring payment:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -67,7 +104,8 @@ function RecurringPayment() {
                         onChange={handleReceiverPhoneNumberChange}
                         required
                     />
-                    {receiverName && (
+                    {phoneNumberLoading && <CircularProgress size={24} />}
+                    {receiverName && !phoneNumberLoading && (
                         <Typography variant="body2" color={receiverName === 'Receiver not found' ? 'error' : 'textSecondary'} mt={1}>
                             Receiver Name: {receiverName}
                         </Typography>
@@ -97,13 +135,30 @@ function RecurringPayment() {
                     </TextField>
                     <Box mt={2}>
                         <Button variant="contained" color="primary" onClick={handleSchedulePayment} fullWidth disabled={loading}>
-                        {loading ? 'Scheduling...' : 'Schedule Payment'}
+                            {loading ? 'Scheduling...' : 'Schedule Payment'}
                         </Button>
                     </Box>
                     {message && (
                         <Typography variant="body2" color={message.includes('successfully') ? 'primary' : 'error'} mt={2}>
                             {message}
                         </Typography>
+                    )}
+                </Box>
+                <Box mt={4}>
+                    <Typography variant="h6" gutterBottom>My Recurring Payments</Typography>
+                    {recurringPayments.length === 0 ? (
+                        <Typography variant="body2">No recurring payments found.</Typography>
+                    ) : (
+                        recurringPayments.map((rp, idx) => (
+                            <Paper key={idx} sx={{ p: 2, mb: 2 }}>
+                                <Typography variant="body1">Receiver: {rp.receiverName || rp.receiverId}</Typography>
+                                <Typography variant="body1">Amount: {formatINR(rp.amount)}</Typography>
+                                <Typography variant="body1">Frequency: {rp.frequency}</Typography>
+                                <Typography variant="body2">
+                                    Next Payment: {rp.nextPaymentDate ? new Date(rp.nextPaymentDate).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : ''}
+                                </Typography>
+                            </Paper>
+                        ))
                     )}
                 </Box>
             </PageContainer>

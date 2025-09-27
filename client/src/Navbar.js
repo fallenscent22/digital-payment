@@ -41,6 +41,7 @@ function Navbar() {
                     <Tab label="Recurring Payment" value="/recurring-payment" component={Link} to="/recurring-payment" />
                     <Tab label="Smart Savings" value="/smart-savings" component={Link} to="/smart-savings" />
                     <Tab label="Help Center" value="/help" component={Link} to="/help" />
+                    <Tab label="Transaction History" value="/transaction-history" component={Link} to="/transaction-history" />
                 </Tabs>
                 <Button
                     color="inherit"

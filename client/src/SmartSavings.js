@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Typography, Paper, Box, TextField, Button } from '@mui/material';
 import { styled } from '@mui/system';
@@ -11,19 +11,37 @@ const PageContainer = styled(Paper)({
     borderRadius: '10px',
 });
 
+function formatINR(amount) {
+    return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function SmartSavings() {
     const [goalName, setGoalName] = useState('');
     const [targetAmount, setTargetAmount] = useState('');
     const [message, setMessage] = useState('');
+    const [savingsGoals, setSavingsGoals] = useState([]);
+
+    useEffect(() => {
+        // Fetch all savings goals for logged-in user
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        axios.get('http://localhost:5000/api/user', { params: { token } })
+            .then(res => {
+                setSavingsGoals(res.data.user.savingsGoals || []);
+            })
+            .catch(() => setSavingsGoals([]));
+    }, []);
 
     const handleAddGoal = async () => {
         const token = localStorage.getItem('token');
         try {
             await axios.post('http://localhost:5000/api/savings-goal', { goalName, targetAmount, token });
             setMessage('Savings goal added');
+            // Optionally refresh savings goals list
+            const res = await axios.get('http://localhost:5000/api/user', { params: { token } });
+            setSavingsGoals(res.data.user.savingsGoals || []);
         } catch (error) {
             setMessage('Failed to add savings goal');
-            console.error('Error adding savings goal:', error);
         }
     };
 
@@ -61,6 +79,20 @@ function SmartSavings() {
                         <Typography variant="body2" color="error" mt={2}>
                             {message}
                         </Typography>
+                    )}
+                </Box>
+                <Box mt={4}>
+                    <Typography variant="h6" gutterBottom>My Savings Goals</Typography>
+                    {savingsGoals.length === 0 ? (
+                        <Typography variant="body2">No savings goals found.</Typography>
+                    ) : (
+                        savingsGoals.map((goal, idx) => (
+                            <Paper key={idx} sx={{ p: 2, mb: 2 }}>
+                                <Typography variant="body1">Goal: {goal.goalName}</Typography>
+                                <Typography variant="body1">Target Amount: {formatINR(goal.targetAmount)}</Typography>
+                                <Typography variant="body2">Current Amount: {formatINR(goal.currentAmount || 0)}</Typography>
+                            </Paper>
+                        ))
                     )}
                 </Box>
             </PageContainer>

@@ -75,7 +75,8 @@ app.post('/api/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = new User({ name, email, password: hashedPassword, phoneNumber });
         await user.save();
-        res.status(201).send(user);
+        const token = jwt.sign({ userId: user.userId }, JWT_SECRET, { expiresIn: '24h' });
+        res.status(201).send({ user, token });
     } catch (error) {
         console.error('Error during registration:', error);
         res.status(500).send('Server error');
@@ -105,16 +106,24 @@ app.post('/api/login', async (req, res) => {
 
 app.get('/api/user', async (req, res) => {
     const token = req.query.token;
-    if (!token) {
-        return res.status(401).send('Token is required');
-    }
+    if (!token) return res.status(401).send('Token is required');
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        const user = await User.findById(decoded.userId);
-        const recurringPayments = await RecurringPayment.find({ userId: decoded.userId });
+        const user = await User.findOne({ userId: decoded.userId });
+        let recurringPayments = await RecurringPayment.find({ userId: decoded.userId });
+
+        // Populate receiver info for each recurring payment
+        recurringPayments = await Promise.all(recurringPayments.map(async (rp) => {
+            const receiver = await User.findOne({ userId: rp.receiverId });
+            return {
+                ...rp.toObject(),
+                receiverName: receiver ? receiver.name : 'Unknown',
+                receiverPhoneNumber: receiver ? receiver.phoneNumber : '',
+            };
+        }));
+
         res.send({ user, recurringPayments });
     } catch (error) {
-        console.error('Error fetching user:', error);
         res.status(401).send('Invalid token');
     }
 });
@@ -161,7 +170,8 @@ app.post('/api/send-money', async (req, res) => {
             await new Transaction({
                 senderId: sender.userId,
                 receiverId: receiver.userId,
-                amount
+                amount,
+                date: new Date()
             }).save({ session });
 
             await session.commitTransaction();
@@ -180,15 +190,25 @@ app.post('/api/send-money', async (req, res) => {
 
 app.get('/api/transactions', async (req, res) => {
     const token = req.query.token;
-    if (!token) {
-        return res.status(401).send('Token is required');
-    }
+    if (!token) return res.status(401).send('Token is required');
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        const transactions = await Transaction.find({ senderId: decoded.userId });
-        res.send(transactions);
+        const transactions = await Transaction.find({
+            $or: [{ senderId: decoded.userId }, { receiverId: decoded.userId }]
+        });
+
+        // Populate receiver info for each transaction
+        const transactionsWithReceiver = await Promise.all(transactions.map(async (tx) => {
+            const receiver = await User.findOne({ userId: tx.receiverId });
+            return {
+                ...tx.toObject(),
+                receiverName: receiver ? receiver.name : 'Unknown',
+                receiverPhoneNumber: receiver ? receiver.phoneNumber : '',
+            };
+        }));
+
+        res.send(transactionsWithReceiver);
     } catch (error) {
-        console.error('Error fetching transactions:', error);
         res.status(401).send('Invalid token');
     }
 });

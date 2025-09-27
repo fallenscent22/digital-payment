@@ -1,49 +1,50 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Container, Typography, Paper, List, ListItem, ListItemText } from '@mui/material';
-import { styled } from '@mui/system';
+import { Container, Typography, Paper, Box } from '@mui/material';
 
-const HistoryContainer = styled(Paper)({
-    padding: '20px',
-    marginTop: '20px',
-    textAlign: 'center',
-});
+function formatINR(amount) {
+    return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 function TransactionHistory() {
     const [transactions, setTransactions] = useState([]);
 
     useEffect(() => {
-        const fetchTransactions = async () => {
-            const token = localStorage.getItem('token');
-            try {
-                const response = await axios.get('http://localhost:5000/api/payments', {
-                    params: { token }
-                });
-                setTransactions(response.data);
-            } catch (error) {
-                console.error('Error fetching transactions:', error);
-            }
-        };
-        fetchTransactions();
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log("No token found in localStorage.");
+            return;
+        }
+        console.log("Fetching transactions with token:", token);
+        axios.get('http://localhost:5000/api/transactions', { params: { token } })
+            .then(res => {
+                console.log("Transaction API response:", res.data);
+                setTransactions(res.data || []);
+            })
+            .catch((err) => {
+                console.error("Error fetching transactions:", err);
+                setTransactions([]);
+            });
     }, []);
 
     return (
         <Container maxWidth="lg">
-            <HistoryContainer elevation={3}>
-                <Typography variant="h6" gutterBottom>
-                    Transaction History
-                </Typography>
-                <List>
-                    {transactions.map((transaction) => (
-                        <ListItem key={transaction._id}>
-                            <ListItemText
-                                primary={`Transaction ID: ${transaction.transactionId}`}
-                                secondary={`Amount: $${transaction.amount} - Date: ${new Date(transaction.date).toLocaleString()}`}
-                            />
-                        </ListItem>
-                    ))}
-                </List>
-            </HistoryContainer>
+            <Typography variant="h4" gutterBottom style={{ color: '#3f51b5' }}>
+                Transaction History
+            </Typography>
+            <Box mt={3}>
+                {transactions.length === 0 ? (
+                    <Typography variant="body2">No transactions found.</Typography>
+                ) : (
+                    transactions.map((tx, idx) => (
+                        <Paper key={idx} sx={{ p: 2, mb: 2 }}>
+                            <Typography variant="body1">Amount: {formatINR(tx.amount)}</Typography>
+                            <Typography variant="body1">Receiver: {tx.receiverName} ({tx.receiverPhoneNumber})</Typography>
+                            <Typography variant="body2">Date: {tx.date ? new Date(tx.date).toLocaleString() : ''}</Typography>
+                        </Paper>
+                    ))
+                )}
+            </Box>
         </Container>
     );
 }

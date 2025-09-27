@@ -13,6 +13,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 
 import Payment from "./Payment";
+import TransactionHistory from "./TransactionHistory"; 
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 console.log("Stripe Key:", process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);   // now its working, don't worry about this
@@ -48,6 +49,7 @@ function App() {
                             <Route path="/recurring-payment" element={<RecurringPayment />} />
                             <Route path="/smart-savings" element={<SmartSavings />} />
                             <Route path="/payment" element={<Payment />} />
+                            <Route path="/transaction-history" element={<TransactionHistory />} />
                             <Route path="/" element={<Navigate to="/login" />} /> {/* Redirect to login */}
                             {/*  <Route path="/profile" element={<Profile />} /> */}
                         </Routes>
