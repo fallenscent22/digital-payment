@@ -1,4 +1,3 @@
-const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Container, Typography, Paper, Box, CircularProgress } from '@mui/material';
@@ -11,6 +10,8 @@ const ProfileContainer = styled(Paper)({
     backgroundColor: '#f5f5f5',
     borderRadius: '10px',
 });
+
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 function Profile() {
     const [user, setUser] = useState(null);

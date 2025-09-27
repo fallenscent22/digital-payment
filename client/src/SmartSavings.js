@@ -1,4 +1,3 @@
-const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Typography, Paper, Box, TextField, Button } from '@mui/material';
@@ -11,6 +10,8 @@ const PageContainer = styled(Paper)({
     backgroundColor: '#f5f5f5',
     borderRadius: '10px',
 });
+
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 function formatINR(amount) {
     return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

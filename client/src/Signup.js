@@ -1,4 +1,3 @@
-const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, TextField, Button, Typography, Box, Paper, InputAdornment, IconButton } from '@mui/material';
@@ -21,6 +20,9 @@ const FormContainer = styled(Paper)({
     justifyContent: 'center',
     alignItems: 'center',
 });
+
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
 
 function Signup() {
     const [name, setName] = useState('');

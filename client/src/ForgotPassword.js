@@ -1,4 +1,3 @@
-const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 import React, { useState } from 'react';
 import { Container, TextField, Button, Typography, Box, Paper } from '@mui/material';
 import { styled } from '@mui/system';
@@ -9,6 +8,8 @@ const FormContainer = styled(Paper)({
     marginTop: '50px',
     textAlign: 'center',
 });
+
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 function ForgotPassword() {
     const [email, setEmail] = useState('');
