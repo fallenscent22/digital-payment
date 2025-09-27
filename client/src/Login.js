@@ -30,7 +30,7 @@ function Login() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
-            const response = await axios.post('http://localhost:5000/api/login', { email, password });
+            const response = await axios.post(`${API_BASE_URL}/api/login`, { email, password });
             localStorage.setItem('token', response.data.token);
             alert('Login Successful!');
             navigate('/home'); // Navigate to the home page after login

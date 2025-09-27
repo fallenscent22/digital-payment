@@ -16,7 +16,7 @@ function TransactionHistory() {
             return;
         }
         console.log("Fetching transactions with token:", token);
-        axios.get('http://localhost:5000/api/transactions', { params: { token } })
+        axios.get(`${REACT_APP_API_BASE_URL}/api/transactions`, { params: { token } })
             .then(res => {
                 console.log("Transaction API response:", res.data);
                 setTransactions(res.data || []);

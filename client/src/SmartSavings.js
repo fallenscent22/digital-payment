@@ -1,3 +1,4 @@
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Typography, Paper, Box, TextField, Button } from '@mui/material';
@@ -25,7 +26,7 @@ function SmartSavings() {
         // Fetch all savings goals for logged-in user
         const token = localStorage.getItem('token');
         if (!token) return;
-        axios.get('http://localhost:5000/api/user', { params: { token } })
+        axios.get(`${REACT_APP_API_BASE_URL}/api/user`, { params: { token } })
             .then(res => {
                 setSavingsGoals(res.data.user.savingsGoals || []);
             })
@@ -35,10 +36,10 @@ function SmartSavings() {
     const handleAddGoal = async () => {
         const token = localStorage.getItem('token');
         try {
-            await axios.post('http://localhost:5000/api/savings-goal', { goalName, targetAmount, token });
+            await axios.post(`${REACT_APP_API_BASE_URL}/api/savings-goal`, { goalName, targetAmount, token });
             setMessage('Savings goal added');
             // Optionally refresh savings goals list
-            const res = await axios.get('http://localhost:5000/api/user', { params: { token } });
+            const res = await axios.get(`${REACT_APP_API_BASE_URL}/api/user`, { params: { token } });
             setSavingsGoals(res.data.user.savingsGoals || []);
         } catch (error) {
             setMessage('Failed to add savings goal');

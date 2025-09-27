@@ -1,3 +1,4 @@
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 import React, { useState } from 'react';
 import { Container, TextField, Button, Typography, Box, Paper } from '@mui/material';
 import { styled } from '@mui/system';
@@ -16,7 +17,7 @@ function ForgotPassword() {
 
     const handleReset = async () => {
         try {
-            await axios.post('http://localhost:5000/api/forgot-password', { email, phoneNumber });
+            await axios.post(`${REACT_APP_API_BASE_URL}/api/forgot-password`, { email, phoneNumber });
             setMessage('Password reset instructions have been sent to your email or phone.');
         } catch (error) {
             setMessage('Failed to send reset instructions.');

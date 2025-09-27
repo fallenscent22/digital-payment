@@ -1,3 +1,4 @@
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Container, Typography, Paper, Box, CircularProgress } from '@mui/material';
@@ -26,7 +27,7 @@ function Profile() {
             }
 
             try {
-                const response = await axios.get('http://localhost:5000/api/user', {
+                const response = await axios.get(`${REACT_APP_API_BASE_URL}/api/user`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },

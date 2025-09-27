@@ -1,3 +1,4 @@
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Typography, Paper, Box, TextField, Button, CircularProgress } from '@mui/material';
@@ -38,7 +39,7 @@ function TransactionPage() {
                 return;
             }
             try {
-                const response = await axios.get('http://localhost:5000/api/user', {
+                const response = await axios.get(`${REACT_APP_API_BASE_URL}/api/user`, {
                     params: { token },
                 });
                 setUser(response.data.user);
@@ -73,7 +74,7 @@ function TransactionPage() {
             setReceiverName('');
             setPhoneNumberLoading(true);
             try {
-                const response = await axios.get('http://localhost:5000/api/get-receiver', {
+                const response = await axios.get(`${REACT_APP_API_BASE_URL}/api/get-receiver`, {
                     params: { phoneNumber: debouncedPhoneNumber, token: localStorage.getItem('token') },
                 });
                 setReceiverName(response.data.name || 'Receiver not found');
@@ -94,7 +95,7 @@ function TransactionPage() {
             console.log("Scanned UPI ID:", scannedUpi);
 
             try {
-                const response = await axios.get('http://localhost:5000/api/get-receiver', {
+                const response = await axios.get(`${REACT_APP_API_BASE_URL}/api/get-receiver`, {
                     params: { upiId: scannedUpi, token: localStorage.getItem('token') },
                 });
 
@@ -158,7 +159,7 @@ function TransactionPage() {
         setLoading(true);
         try {
             //Creating PaymentIntent from backend
-            const { data } = await axios.post("http://localhost:5000/api/payment/create-payment-intent", {
+            const { data } = await axios.post(`${REACT_APP_API_BASE_URL}/api/payment/create-payment-intent`, {
                 amount: parsedAmount,
             });
 
@@ -177,7 +178,7 @@ function TransactionPage() {
             if (result.error) {
                 setMessage(`Payment failed: ${result.error.message}`);
             } else if (result.paymentIntent?.status === "succeeded") {
-                await axios.post("http://localhost:5000/api/send-money", {
+                await axios.post(`${REACT_APP_API_BASE_URL}/api/send-money`, {
                     receiverPhoneNumber,
                     receiverUpiId,
                     amount: parsedAmount,

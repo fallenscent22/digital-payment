@@ -35,7 +35,7 @@ function Home() {
         const fetchUserData = async () => {
             const token = localStorage.getItem('token');
             try {
-                const response = await axios.get('http://localhost:5000/api/user', {
+                const response = await axios.get(`${API_BASE_URL}/api/user`, {
                     params: { token }
                 });
                 setUser(response.data.user);
@@ -47,7 +47,7 @@ function Home() {
         const fetchTransactions = async () => {
             const token = localStorage.getItem('token');
             try {
-                const response = await axios.get('http://localhost:5000/api/transactions', {
+                const response = await axios.get(`${API_BASE_URL}/api/transactions`, {
                     params: { token }
                 });
                 setTransactions(response.data);

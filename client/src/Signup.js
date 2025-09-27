@@ -1,3 +1,4 @@
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, TextField, Button, Typography, Box, Paper, InputAdornment, IconButton } from '@mui/material';
@@ -79,7 +80,7 @@ function Signup() {
         }
 
         try {
-            const response = await axios.post('http://localhost:5000/api/register', { name, email, password, phoneNumber });
+            const response = await axios.post(`${REACT_APP_API_BASE_URL}/api/register`, { name, email, password, phoneNumber });
           //  const { qrCode } = response.data; // Expecting `qrCode` from backend
           //  setQrCodeData(qrCode);
            // Show QR code before redirect

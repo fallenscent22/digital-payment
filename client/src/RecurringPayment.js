@@ -1,3 +1,4 @@
+const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, Typography, Paper, Box, TextField, Button, MenuItem, CircularProgress } from '@mui/material';
@@ -30,7 +31,7 @@ function RecurringPayment() {
         // Fetch all recurring payments for logged-in user
         const token = localStorage.getItem('token');
         if (!token) return;
-        axios.get('http://localhost:5000/api/user', { params: { token } })
+        axios.get(`${REACT_APP_API_BASE_URL}/api/user`, { params: { token } })
             .then(res => {
                 setRecurringPayments(res.data.recurringPayments || []);
             })
@@ -58,7 +59,7 @@ function RecurringPayment() {
             setPhoneNumberLoading(true);
             try {
                 const token = localStorage.getItem('token');
-                const response = await axios.get('http://localhost:5000/api/get-receiver', {
+                const response = await axios.get(`${REACT_APP_API_BASE_URL}/api/get-receiver`, {
                     params: { phoneNumber: debouncedPhoneNumber, token },
                 });
                 setReceiverName(response.data.name || 'Receiver not found');
@@ -76,10 +77,10 @@ function RecurringPayment() {
         if (!token) return;
         setLoading(true);
         try {
-            await axios.post('http://localhost:5000/api/recurring-payment', { receiverPhoneNumber, amount, frequency, token });
+            await axios.post(`${REACT_APP_API_BASE_URL}/api/recurring-payment`, { receiverPhoneNumber, amount, frequency, token });
             setMessage('Recurring payment scheduled');
             // Optionally refresh recurring payments list
-            const res = await axios.get('http://localhost:5000/api/user', { params: { token } });
+            const res = await axios.get(`${REACT_APP_API_BASE_URL}/api/user`, { params: { token } });
             setRecurringPayments(res.data.recurringPayments || []);
         } catch (error) {
             setMessage('Failed to schedule recurring payment');

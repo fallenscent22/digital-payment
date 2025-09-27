@@ -15,12 +15,14 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Middleware
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: [
+        'http://localhost:3000',
+        'https://digital-payment-six.vercel.app'
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
-
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI, {
@@ -209,8 +211,8 @@ app.get('/api/transactions', async (req, res) => {
         }));
 
         res.send(transactionsWithReceiver);
-        console.log("Decoded userId:", decoded.userId);                      // newwwwwwwwwwwwwwwwwww
-        console.log("Transactions found:", transactions);                   // newwwwwwwwwwwwwwwwwwww
+        console.log("Decoded userId:", decoded.userId);            
+        console.log("Transactions found:", transactions);                 
     } catch (error) {
         res.status(401).send('Invalid token');
     }
