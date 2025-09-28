@@ -38,13 +38,15 @@ function TransactionHistory() {
                 {transactions.length === 0 ? (
                     <Typography variant="body2">No transactions found.</Typography>
                 ) : (
-                    transactions.map((tx, idx) => (
-                        <Paper key={idx} sx={{ p: 2, mb: 2 }}>
-                            <Typography variant="body1">Amount: {formatINR(tx.amount)}</Typography>
-                            <Typography variant="body1">Receiver: {tx.receiverName} ({tx.receiverPhoneNumber})</Typography>
-                            <Typography variant="body2">Date: {tx.date ? new Date(tx.date).toLocaleString() : ''}</Typography>
-                        </Paper>
-                    ))
+                    [...transactions]
+                        .sort((a, b) => new Date(b.date) - new Date(a.date))
+                        .map((tx, idx) => (
+                            <Paper key={idx} sx={{ p: 2, mb: 2 }}>
+                                <Typography variant="body1">Amount: {formatINR(tx.amount)}</Typography>
+                                <Typography variant="body1">Receiver: {tx.receiverName} ({tx.receiverPhoneNumber})</Typography>
+                                <Typography variant="body2">Date: {tx.date ? new Date(tx.date).toLocaleString() : ''}</Typography>
+                            </Paper>
+                        ))
                 )}
             </Box>
         </Container>

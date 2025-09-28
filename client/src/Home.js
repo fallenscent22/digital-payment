@@ -20,12 +20,7 @@ const HistoryContainer = styled(Paper)({
     borderRadius: '10px',
 });
 
-const TransactionItem = styled(ListItem)({
-    backgroundColor: '#ffffff',
-    marginBottom: '10px',
-    borderRadius: '5px',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-});
+
 
 const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -62,10 +57,11 @@ function Home() {
         fetchTransactions();
     }, []);
 
-    // Getters for user properties
-    const getUserEmail = () => user?.email || 'No email available';
-    const getUserUpiId = () => user?.upiId || 'No UPI ID available';
-    const getUserBalance = () => user?.balance ?? 'Balance unavailable';
+   
+
+    function formatINR(amount) {
+        return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
 
     return (
         <Container maxWidth="lg">
@@ -78,7 +74,7 @@ function Home() {
                         <Typography variant="h6">Name:{user.name}</Typography>
                         <Typography variant="h6">Email: {user.email}</Typography>
                         <Typography variant="body1">UPI ID: {user.upiId}</Typography>
-                        <Typography variant="body1">Balance: ${user.balance}</Typography>
+                        <Typography variant="body1">Balance: {formatINR(user.balance)}</Typography>
                         <Typography variant="h6" gutterBottom style={{ marginTop: '20px' }}>
                             Your QR Code
                         </Typography>
@@ -91,14 +87,17 @@ function Home() {
                     Transaction History
                 </Typography>
                 <List>
-                    {transactions.map((transaction) => (
-                        <ListItem key={transaction._id}>
-                            <ListItemText
-                               primary={`Amount: $${transaction.amount}`}
-                               secondary={`To: ${transaction.receiverName} on ${new Date(transaction.date).toLocaleString()}`}
-                            />
-                        </ListItem>
-                    ))}
+                    {[...transactions]
+                        .sort((a, b) => new Date(b.date) - new Date(a.date))
+                        .slice(0, 5)
+                        .map((transaction) => (
+                            <ListItem key={transaction._id}>
+                                <ListItemText
+                                    primary={`Amount: ${formatINR(transaction.amount)}`}
+                                    secondary={`To: ${transaction.receiverName} on ${new Date(transaction.date).toLocaleString()}`}
+                                />
+                            </ListItem>
+                        ))}
                 </List>
             </HistoryContainer>
         </Container>
